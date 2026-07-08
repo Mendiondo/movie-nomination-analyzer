@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { parseCsvRows } from "./parser";
 import { Nomination } from "./types";
 import { PORT, CSV_FILE_PATH } from "./consts";
+import { createNomination, createProducer, getAllNominations } from './data/queries';
 
 const app = express();
 const port = Number(PORT);
@@ -16,8 +17,9 @@ async function loadCsv(): Promise<void> {
 
   console.log(`Loaded ${loadedRecords.length} rows`);
   loadedRecords.map((row, index) => {
+    createNomination.get(String(index), row.year, row.title, row.studios, row?.winner ? 1 : 0);
     console.log(`Row ${index + 1}: ${JSON.stringify(row)}`);
-  });  
+  });
 }
 
 app.get("/health", (_req, res) => {
@@ -33,7 +35,8 @@ app.get("/csv-info", (_req, res) => {
 });
 
 app.get("/csv-data", (_req, res) => {
-  res.json(loadedRecords);
+  const nominations = getAllNominations.all();
+  res.json(nominations);
 });
 
 async function startUp(): Promise<void> {

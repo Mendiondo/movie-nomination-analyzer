@@ -3,5 +3,5 @@ export type Nomination = {
   title: string;
   studios: string;
   producers: string;
-  winner?: boolean;
+  winner: boolean;
 }
