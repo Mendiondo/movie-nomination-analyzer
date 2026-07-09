@@ -5,3 +5,10 @@ export type Nomination = {
   producers: string;
   winner: boolean;
 }
+
+export type WinningInterval = {
+  producer: string;
+  interval: number;
+  previousWin: number;
+  followingWin: number;
+};
