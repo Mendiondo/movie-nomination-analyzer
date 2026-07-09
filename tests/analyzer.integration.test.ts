@@ -4,11 +4,7 @@ import database from "../src/data/database";
 import { createNomination } from "../src/models/nomination.model";
 import { Nomination } from "../src/types";
 
-function insertWinningNomination(
-  year: number,
-  title: string,
-  producers: string,
-): void {
+function insertWinningNomination(year: number, title: string, producers: string): void {
   const nomination: Nomination = {
     year,
     title,
@@ -19,11 +15,7 @@ function insertWinningNomination(
   createNomination(nomination);
 }
 
-function insertLosingNomination(
-  year: number,
-  title: string,
-  producers: string,
-): void {
+function insertLosingNomination(year: number, title: string, producers: string): void {
   const nomination: Nomination = {
     year,
     title,
