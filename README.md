@@ -1,5 +1,6 @@
 # movie-nomination-analyzer
-Load a CSV nomination list and analyze it
+Load a CSV file named Movielist.csv under /files folder with a Golden Raspberry Awards list and analyze it
+The CSV file might be changed, but keeping the same structure
 
 ## Quickstart
 
