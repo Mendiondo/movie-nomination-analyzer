@@ -1,7 +1,13 @@
+import { AddressInfo } from "node:net";
+import { readFileSync, writeFileSync } from "node:fs";
+import express from "express";
 import { beforeEach, describe, expect, it } from "vitest";
 import { getWinningIntervals } from "../src/analyzer";
+import { CSV_FILE_PATH } from "../src/consts";
 import database from "../src/data/database";
 import { createNomination } from "../src/models/nomination.model";
+import { loadCsv } from "../src/parser";
+import { registerRoutes } from "../src/routes";
 import { Nomination } from "../src/types";
 
 function insertWinningNomination(year: number, title: string, producers: string): void {
@@ -127,5 +133,115 @@ describe("getWinningIntervals integration", () => {
         followingWin: 2008,
       },
     ]);
+  });
+
+  it("returns the the expected intervals for the default Movielist.csv file", async () => {
+    const expected = {
+      "min": [
+        {
+          "producer": "Joel Silver",
+          "interval": 1,
+          "previousWin": 1990,
+          "followingWin": 1991
+        }
+      ],
+      "max": [
+        {
+          "producer": "Matthew Vaughn",
+          "interval": 13,
+          "previousWin": 2002,
+          "followingWin": 2015
+        }
+      ]
+    }
+
+    loadCsv();
+
+    const app = express();
+    registerRoutes(app);
+
+    const server = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
+      const listeningServer = app.listen(0, () => resolve(listeningServer));
+    });
+
+    try {
+      const address = server.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${address.port}/winning-intervals`);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual(expected);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+    }
+  });
+
+  it("returns a different payload when the Movielist.csv content changes", async () => {
+    const defaultExpected = {
+      min: [
+        {
+          producer: "Joel Silver",
+          interval: 1,
+          previousWin: 1990,
+          followingWin: 1991,
+        },
+      ],
+      max: [
+        {
+          producer: "Matthew Vaughn",
+          interval: 13,
+          previousWin: 2002,
+          followingWin: 2015,
+        },
+      ],
+    };
+
+    const originalCsv = readFileSync(CSV_FILE_PATH, "utf-8");
+    const changedCsv = originalCsv.replace(
+      "1991;Hudson Hawk;TriStar Pictures;Joel Silver;yes",
+      "1991;Hudson Hawk;TriStar Pictures;Joel Silver;",
+    );
+
+    writeFileSync(CSV_FILE_PATH, changedCsv, "utf-8");
+
+    const app = express();
+    registerRoutes(app);
+    let server = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
+      const listeningServer = app.listen(0, () => resolve(listeningServer));
+    });
+
+    try {
+      loadCsv();
+
+      const address = server.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${address.port}/winning-intervals`);
+
+      expect(response.status).toBe(200);
+      const responseJson = await response.json();
+      expect(responseJson).not.toEqual(defaultExpected);
+    } finally {
+      writeFileSync(CSV_FILE_PATH, originalCsv, "utf-8");
+
+      if (server) {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve();
+          });
+        });
+      }
+    }
   });
 });
